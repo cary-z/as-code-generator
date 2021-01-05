@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>代码生成器模板</title>
+    <script src="jQuery.js"></script>
+</head>
+
+<body>
+    <form id="form">
+        类名：<input name="classname" type="text">
+        </br>
+        </br>
+        是否需要showWin函数：
+        <label><input type="radio" name="judge" value="1">是</label>
+        <label><input type="radio" name="judge" value="0" checked >否</label>
+        <div id="modulename">Module name：<input name="module_name" type="text"></div>
+        </br>
+        <div>
+            是否继承：
+            <label><input type="radio" name="inherit" value="1" checked >是</label>
+            <label><input type="radio" name="inherit" value="0">否</label>
+            <div id="inheritclassname">继承类：<input name="inherit_classname" type="text"></div>
+        </div>
+        </br>
+        素材名：<input name="uiname" type="text">
+        </br>
+        </br>
+        设置tap按钮：
+        </br>
+        tap按钮个数：<input name="tap_count" type="text">
+        </br>
+        tap按钮素材名称：<input name="tapui_name" type="text">
+        </br>
+        </br>
+        设置tap按钮触发内容
+        </br>
+        tap按钮触发内容素材名称：<input name="contentsui_name" type="text">
+        </br>
+        </br>
+        <div id="control"></div>
+        </br>
+        <input id="submit" type="button" value="提交">
+        </br>
+        </br>
+    </form>
+    <script>
+        let typearr = [{
+            "name": "按钮",
+            "type": "button",
+            "astype": "UIButton",
+            "vartype": function(name, type) {
+                return `private var ${name}:${type};
+            `;
+            },
+            "inittype": function(name, type, uiname) {
+                return `${name} = new ${type}(${uiname});
+                `;
+            }
+        }, {
+            "name": "文本框",
+            "type": "text",
+            "astype": "TextField",
+            "vartype": function(name, type) {
+                return `private var ${name}:${type};
+            `;
+            },
+            "inittype": function(name, type, uiname) {
+                return `${name} = ${uiname};
+                `;
+            }
+        }, {
+            "name": "动画帧",
+            "type": "movie",
+            "astype": "MovieClip",
+            "vartype": function(name, type) {
+                return `private var ${name}:${type};
+            `;
+            },
+            "inittype": function(name, type, uiname) {
+                return `${name} = ${uiname};
+                ${name} = new ${type}();
+                `;
+            }
+        }];
+        for (let i = 0; i < typearr.length; i++) {
+            $("#control").append(`
+                是否有其他${typearr[i].name}：
+                <label><input type='radio' name='${typearr[i].type}' value='1'>是</label>
+                <label><input type='radio' name='${typearr[i].type}' value='0' checked >否</label>
+                <input id='add${typearr[i].type}' type='button' value='增加'>
+                <div id='${typearr[i].type}name'>
+                    
+                    </br>
+                </div>
+                </br>
+            `);
+
+            //增加事件和判断
+            $("#add" + typearr[i].type).click(function() {
+                $("#" + typearr[i].type + "name").append(`
+                    ${typearr[i].name}名称：<input name="${typearr[i].type}_name" type="text"> ${typearr[i].name}素材名：
+                    <input name="${typearr[i].type}ui_name" type="text">
+                    </br>
+                `)
+            });
+
+            //是否有其他按钮判断
+            $("#add" + typearr[i].type).css("display", "none");
+            $("input[type=radio][name=" + typearr[i].type + "]").change(function() {
+                if ($(this).val() == 1) {
+                    $("#add" + typearr[i].type).css("display", "block");
+                    $("#" + typearr[i].type + "name").append(`
+                        ${typearr[i].name}名称：<input name="${typearr[i].type}_name" type="text"> ${typearr[i].name}素材名：
+                        <input name="${typearr[i].type}ui_name" type="text">
+                        </br>
+                `)
+                } else {
+                    $("#add" + typearr[i].type).css("display", "none");
+                    $("#" + typearr[i].type + "name").empty();
+                }
+            });
+        }
+
+        //是否需要showWin函数判断
+        $("#modulename").css("display", "none");
+        $("input[type=radio][name=judge]").change(function() {
+            if ($(this).val() == 1) {
+                $("#modulename").css("display", "block");
+            } else {
+                $("#modulename").css("display", "none");
+            }
+        });
+
+        //是否继承判断
+        $("#inheritclassname").css("display", "block");
+        $("input[type=radio][name=inherit]").change(function() {
+            if ($(this).val() == 1) {
+                $("#inheritclassname").css("display", "block");
+            } else {
+                $("#inheritclassname").css("display", "none");
+            }
+        });
+
+        //点击提交按钮
+        $("#submit").click(function() {
+                    let form = document.getElementById("form");
+                    let formData = new FormData(form);
+
+                    let total = "";
+                    let total_init = "";
+                    for (let i = 0; i < typearr.length; i++) {
+                        let type = "";
+                        let type_init = "";
+
+                        let name = formData.getAll(typearr[i].type + "_name");
+                        let ui_name = formData.getAll(typearr[i].type + "ui_name");
+                        console.log(ui_name);
+                        for (let j = 0; j < name.length; j++) {
+                            type += typearr[i].vartype(name[j], typearr[i].astype);
+                            type_init += typearr[i].inittype(name[j], typearr[i].astype, ui_name[j]);
+                        }
+                        total += type;
+                        total_init += type_init;
+                    }
+
+                    let outputall =
+                        `
+    public class ${formData.get("classname")} ${formData.get("inherit") == 1 ? "extends " + formData.get("inherit_classname") : ""}
+	    {
+            private var _title:Vector.<UIButton>;
+		    private var _contents:Vector.<MovieClip>;
+            ${total}
+            ${formData.get("judge") == 1 ?
+                `public static function showWin():void
+            {
+                ModuleManager.doModuleCommand("${formData.get("inherit_classname")}",function():void{
+                    new ${formData.get("classname")}();
+                });
+            }
+            ` : ""}
+            public function ${formData.get("classname")}()
+		    {
+			    super("${formData.get("uiname")}");
+                _title = new Vector.<UIButton>();
+			    for (var i:int = 0; i < ${formData.get("tap_count")}; i++) 
+                {
+                    _title.push(new UIButton(ui["${formData.get("tapui_name")}"+(i+1)]));
+                    _title[i].setClickFunction(onTitle);
+			    }
+			
+                _contents = new Vector.<MovieClip>();
+                _contents.push(new Chariotactivation(${formData.get("contentsui_name")},this));
+                
+                _title[0]._mc.dispatchEvent(new MouseEvent(MouseEvent.CLICK));
+
+                ${total_init}
+			}
+
+            public function onTitle(e:MouseEvent):void
+            {
+                for (var i:int = 0; i < _title.length; i++) 
+                {
+                    _title[i].Selected = e.currentTarget == _title[i]._mc;
+                    _contents[i].ui.visible = e.currentTarget == _title[i]._mc;
+                }
+            }
+        }
+`
+            console.log(outputall);
+            // 清除所有文本框内容
+            let inputarr = $("input[type=text]");
+            for (let i = 0; i < inputarr.length; i++) {
+                const element = inputarr[i];
+                element.value = "";
+            }
+        })
+    </script>
+</body>
+
+</html>
